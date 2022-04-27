@@ -1,6 +1,7 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
-    <!-- <div
+    <div
+      v-if="load"
       class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
     >
       <svg
@@ -23,7 +24,7 @@
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         ></path>
       </svg>
-    </div> -->
+    </div>
     <div class="container">
       <section>
         <div class="flex">
@@ -33,7 +34,7 @@
             >
             <div class="mt-1 relative rounded-md shadow-md">
               <input
-                v-model="ticker"
+                v-model="v$.ticker.$model"
                 type="text"
                 name="wallet"
                 id="wallet"
@@ -46,24 +47,11 @@
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
               <span
+                v-for="cryptoCoin in coinlistSlice.slice(0, 4)"
+                :key="`cryptoCoin-${cryptoCoin.Id}`"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
-                BTC
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                DOGE
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                BCH
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                CHD
+                {{ cryptoCoin.Symbol }}
               </span>
             </div>
             <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
@@ -178,18 +166,57 @@
 </template>
 
 <script>
+import useVuelidate from "@vuelidate/core";
+import { required } from "@vuelidate/validators";
 export default {
   name: "App",
   components: {},
+  setup() {
+    return {
+      v$: useVuelidate(),
+    };
+  },
   data() {
     return {
       ticker: "",
       tickers: [],
       selectedTicker: null,
       graphTickers: [],
+      load: true,
+      cryptoCoinlist: [],
     };
   },
+  validations() {
+    return {
+      ticker: { required },
+    };
+  },
+  watch: {
+    ticker(v) {
+      console.log(v);
+      console.log(this.v$.ticker.$touch());
+    },
+  },
+  computed: {
+    coinlistSlice() {
+      return this.cryptoCoinlist;
+    },
+  },
+  mounted() {
+    this.coinlist();
+  },
   methods: {
+    async coinlist() {
+      this.load = true;
+      const coinList = await fetch(
+        "https://min-api.cryptocompare.com/data/all/coinlist?summary=true"
+      ).finally(() => {
+        setTimeout(() => (this.load = false), 2000);
+      });
+      const data = await coinList.json();
+      const { Data } = data;
+      this.cryptoCoinlist = Object.keys(Data).map((key) => Data[key]);
+    },
     addTicker() {
       const currentTicker = {
         name: this.ticker,
