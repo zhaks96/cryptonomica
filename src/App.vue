@@ -49,7 +49,9 @@
 
       <template v-if="tickers.length">
         <Tickers
+          ref="tickersComponent"
           :tickers="tickers"
+          :selectedTicker="selectedTicker"
           @remove="removeTicker"
           @select="selectTicker"
         />
@@ -102,6 +104,15 @@ export default {
       return this.ticker ? this.filtredCryptoCoinlist : this.cryptoCoinlist;
     },
   },
+  created() {
+    const tickerData = localStorage.getItem("cryptonomicon-list");
+    if (tickerData) {
+      this.tickers = JSON.parse(tickerData);
+      this.tickers.forEach((ticker) => {
+        this.subscribeToUpdates(ticker.name);
+      });
+    }
+  },
   mounted() {
     this.coinlist();
   },
@@ -141,28 +152,37 @@ export default {
           price: "-",
         };
         this.tickers.push(currentTicker);
-        setInterval(async () => {
-          const f = await fetch(
-            `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=${process.env.API_KEY}`
-          );
-          const data = await f.json();
-          const { USD } = data;
-          this.tickers.find(
-            (ticker) => ticker.name === currentTicker.name
-          ).price = USD > 1 ? USD.toFixed(2) : USD.toPrecision(2);
-          if (this.selectedTicker?.name === currentTicker.name) {
-            this.graphTickers.push(USD);
-          }
-        }, 5000);
-        this.ticker = "";
+
+        localStorage.setItem(
+          "cryptonomicon-list",
+          JSON.stringify(this.tickers)
+        );
+        this.subscribeToUpdates(currentTicker.name);
+        this.$refs.tickersComponent.resetFilter();
       }
+    },
+    async subscribeToUpdates(tickerName) {
+      setInterval(async () => {
+        const f = await fetch(
+          `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=${process.env.API_KEY}`
+        );
+        const data = await f.json();
+        const { USD } = data;
+        this.tickers.find((ticker) => ticker.name === tickerName).price =
+          USD > 1 ? USD.toFixed(2) : USD.toPrecision(2);
+        if (this.selectedTicker?.name === tickerName) {
+          this.graphTickers.push(USD);
+        }
+      }, 5000);
+      this.ticker = "";
     },
     selectTicker(ticker) {
       this.selectedTicker = ticker;
       this.graphTickers = [];
     },
-    removeTicker(tick) {
-      this.tickers = this.tickers.filter((t) => t !== tick);
+    removeTicker(tickerToRemove) {
+      this.tickers = this.tickers.filter((t) => t !== tickerToRemove);
+      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
     },
     resetTicker() {
       this.selectedTicker = null;

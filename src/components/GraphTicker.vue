@@ -16,16 +16,16 @@
       class="absolute top-0 right-0"
       @click="$emit('reset')"
     >
-      <ico-remove />
+      <ico-close />
     </button>
   </section>
 </template>
 
 <script>
-import icoRemove from "../icons/reomve.vue";
+import icoClose from "../icons/close.vue";
 export default {
   components: {
-    icoRemove,
+    icoClose,
   },
   props: {
     selectedTicker: { type: Object, default: () => null },
