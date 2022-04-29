@@ -22,7 +22,7 @@
     <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
       <!-- border-4 -->
       <div
-        v-for="tick in filtredTickers()"
+        v-for="tick in pagedTickers"
         :key="`ticker-${tick.id}`"
         @click="selectTicker(tick)"
         :class="{ 'border-4': selectedTicker === tick }"
@@ -62,7 +62,6 @@ export default {
     return {
       page: 1,
       filter: "",
-      hasNextPage: true,
     };
   },
   created() {
@@ -82,18 +81,26 @@ export default {
       this.updateUrl();
     },
   },
-  methods: {
+  computed: {
+    startIndex() {
+      return (this.page - 1) * 6;
+    },
+    endIndex() {
+      return this.page * 6;
+    },
     filtredTickers() {
-      const start = (this.page - 1) * 6;
-      const end = this.page * 6;
-      const filtredList = this.tickers.filter((ticker) =>
+      return this.tickers.filter((ticker) =>
         ticker.name.includes(this.filter.toUpperCase())
       );
-
-      this.hasNextPage = filtredList.length > end;
-
-      return filtredList.slice(start, end);
     },
+    pagedTickers() {
+      return this.filtredTickers.slice(this.startIndex, this.endIndex);
+    },
+    hasNextPage() {
+      return this.filtredTickers.length > this.endIndex;
+    },
+  },
+  methods: {
     removeTicker(tick) {
       this.$emit("remove", tick);
     },

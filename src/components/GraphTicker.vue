@@ -5,7 +5,7 @@
     </h3>
     <div class="flex items-end border-gray-600 border-b border-l h-64">
       <div
-        v-for="(bar, index) in normalizeGraph"
+        v-for="(bar, index) in normalizedGraph"
         :key="`bar-${index}`"
         :style="{ height: `${bar}%` }"
         class="bg-purple-800 border w-10"
@@ -32,9 +32,14 @@ export default {
     graphTickers: { type: Object, default: () => null },
   },
   computed: {
-    normalizeGraph() {
+    normalizedGraph() {
       const maxValue = Math.max(...this.graphTickers);
       const minValue = Math.min(...this.graphTickers);
+
+      if (maxValue === minValue) {
+        return this.graph.map(() => 50);
+      }
+
       return this.graphTickers.map(
         (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );
